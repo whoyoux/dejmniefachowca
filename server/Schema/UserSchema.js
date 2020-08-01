@@ -15,6 +15,7 @@ const userSchema = mongoose.Schema({
     },
     email: {
         type: String,
+        unique: true,
         required: [true, "Proszę podać email!"]
     },
     password: {
@@ -53,7 +54,7 @@ const userSchema = mongoose.Schema({
     },
     profession: {
         type: String,
-        default: 'siemano',
+        default: 'none',
         required: [true, "Proszę podać swoją profesję!"]
     },
     rates: {
@@ -88,10 +89,8 @@ const userSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
-    verify_code: {
-        type: Number,
-        default: Math.floor(100000 + Math.random() * 900000)
-    },
+    passwordResetToken: String,
+    passwordResetExpires: Date,
     tokens: [
         {
             token: {
@@ -109,20 +108,6 @@ userSchema.pre("save", async function(next) {
     }
     next();
 });
-
-userSchema.post("init", async function() {
-    //Wysylanie emaila dajacego kod do potwierdzenia!
-    const user = this;
-    const transporter = nodemailer.createTransport(config.EMAIL_AUTH);
-    const mailOptions = {
-        from: config.EMAIL_AUTH.auth.user,
-        to: user.email,
-        subject: 'dejmniefachowca.pl - Weryfikacja konta',
-        text: `siema, masz tu kodzik: ${user.verify_code}`
-    };
-    let info = await transporter.sendMail(mailOptions);
-    console.log(`Message sent: ${info.messageId}`);
-})
 
 userSchema.methods.generateAuthToken = async function() {
     const user = this;

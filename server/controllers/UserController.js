@@ -1,7 +1,8 @@
 const User = require('../Schema/UserSchema');
+const ConfirmToken = require('../Schema/ConfirmTokenSchema');
 const config = require('../config/config');
 const nodemailer = require('nodemailer');
-
+const crypto = require('crypto');
 
 exports.registerNewUser = async (req,res) => {
     try{
@@ -25,9 +26,25 @@ exports.registerNewUser = async (req,res) => {
         let data = await user.save();
         const token = await user.generateAuthToken();
 
+        const confirmAccountToken = new ConfirmToken({
+            _userId: data._id,
+            token: crypto.randomBytes(16).toString('hex')
+        });
+
+        await confirmAccountToken.save();
+        const transporter = nodemailer.createTransport(config.EMAIL_AUTH);
+        const mailOptions = {
+            from: config.EMAIL_AUTH.auth.user,
+            to: user.email,
+            subject: 'dejmniefachowca.pl - Weryfikacja konta',
+            text: `siema, masz tu link: \nhttp://localhost:8080/confirm/${confirmAccountToken.token}`
+        };
+        let info = await transporter.sendMail(mailOptions);
+        console.log(`Message sent: ${info.messageId}`);
+
         res.status(201).json({data,token});
     } catch(err) {
-        res.status(400).json({ err: err });
+        res.status(400).json({ err: err.message });
     }
 };
 
@@ -60,49 +77,69 @@ exports.getSpecificUser = async (req,res) => {
     
 }
 
-exports.verifyAccount = async (req,res) => {
+exports.confirmAccount = async (req, res, next) => {
     try {
-        let user = await User.findById(req.body.id);
-        if(user.isVerified === true) {
-            res.status(400).json({error: `Konto ${user.email} zostało już wcześniej potwierdzone!`});
+        const token = await ConfirmToken.findOne({token: req.body.confirmToken});
+        try {
+            const user = await User.findOne({_id: token._userId, email: req.body.email});
+            if(user.isVerified) {
+                return res.status(400).json({message: 'Użytkownik został juz potwierdzony!'});
+            }
+            user.isVerified = true;
+            try {
+                await user.save();
+                await ConfirmToken.deleteOne({_userId: token._userId});
+                const transporter = nodemailer.createTransport(config.EMAIL_AUTH);
+                const mailOptions = {
+                    from: config.EMAIL_AUTH.auth.user,
+                    to: user.email,
+                    subject: 'dejmniefachowca.pl - Weryfikacja konta przebiegła pomyślnie!',
+                    text: `Życzymy miłego korzystania z naszego serwisu!`
+                };
+                let info = await transporter.sendMail(mailOptions);
+                res.status(200).json({message: `Udało się zweryfikować użytkownika: ${user.email}`})
+            } catch(errVerify) {
+                res.status(500).json({message: `Nie można było zweryfikować użytkownika! Błąd: ${errVerify.message}`})
+            }
+            
+        } catch(errFindUser) {
+            res.status(500).json({error: `Użytkownik nie został znalezniony z _id: ${token._userId} albo email: ${req.body.email}! Błąd: ${errFindUser.message}`});
         }
-        else if(parseInt(req.body.verify_code) === parseInt(user.verify_code)) {
-            await User.updateOne({_id: req.body.id}, { $set: {isVerified: true}});
+        
 
-            const transporter = nodemailer.createTransport(config.EMAIL_AUTH);
-            const mailOptions = {
-                from: config.EMAIL_AUTH.auth.user,
-                to: user.email,
-                subject: 'dejmniefachowca.pl - Konto zostało potwierdzone!',
-                text: `Dziękujemy ${user.first_name} za stworzenie konta w naszym serwisie! Życzymy udanych wyborów! (do zmiany na 100%)`
-            };
-            await transporter.sendMail(mailOptions);
-
-            res.status(200).json({message: `Konto ${user.email} zostało właśnie potwierdzone kodem: ${user.verify_code}`});
-        } else {
-            res.status(400).json({error: `Konto ${user.email} nie udało się potwiedzić! Błędny kod weryfikujący!`});
-        }
     } catch(err) {
-        console.log(err);
-        res.send(400).json(err);
+        res.status(500).json({error: 'Token potwierdzający nie został znalezniony!'});
     }
+    
 };
 
-exports.resendVerifyEmail = async (req,res) => {
+exports.resendVerifyToken = async (req, res, next) => {
     try {
-        let new_verify_code = Math.floor(100000 + Math.random() * 900000)
-        let user = await User.findByIdAndUpdate(req.body.id, {verify_code: new_verify_code});
-        const transporter = nodemailer.createTransport(config.EMAIL_AUTH);
-        const mailOptions = {
-            from: config.EMAIL_AUTH.auth.user,
-            to: user.email,
-            subject: 'dejmniefachowca.pl - Weryfikacja konta',
-            text: `siema, masz tu kodzik: ${new_verify_code}`
-        };
-        await transporter.sendMail(mailOptions);
-        res.status(200).json({message: 'Wiadomość została wysłana!'});
+        const user = await User.findOne({email: req.body.email});
+        if(user.isVerified) {
+            return res.status(400).json({message: 'Użytkownik został juz potwierdzony!'});
+        }
+        const token = new ConfirmToken({
+            _userId: user._id,
+            token: crypto.randomBytes(16).toString('hex')
+        });
+
+        try {
+            const savedToken = await token.save();
+            const transporter = nodemailer.createTransport(config.EMAIL_AUTH);
+                const mailOptions = {
+                from: config.EMAIL_AUTH.auth.user,
+                to: user.email,
+                subject: 'dejmniefachowca.pl - Weryfikacja konta',
+                text: `siema, masz tu link: \nhttp://localhost:8080/confirm/${savedToken.token}`
+            };
+            let info = await transporter.sendMail(mailOptions);
+            res.status(200).json({message: `Udało się wysłać ponownie token potwiedzający konto: ${req.body.email}`})
+        } catch(errSaved) {
+            res.status(500).json({error: `Nie udało się stworzyć ponownie tokenu potwierdzającego konto ${user.email}! Błąd: ${errSaved.message}`})
+        }
     } catch(err) {
-        console.log(`Nie udalo sie wyslac ponownie emaila weryfikujacego do ${req.body.id}! Blad: ${err}`);
-        res.status(400).json({error: err});
+        res.status(500).json({error: `Użytkownik nie został znaleziony! Błąd: ${err.message}`})
     }
-}
+    
+};
