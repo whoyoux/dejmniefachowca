@@ -3,7 +3,7 @@ const app = express();
 const cors = require('cors');
 const mongoose = require('mongoose');
 const config = require('./config/config');
-
+const auth = require('./middle/auth');
 // Routers
 const UserRouter = require('./routes/UserRoute');
 
@@ -14,7 +14,9 @@ mongoose.connect(config.DB_STRING,{useNewUrlParser: true, useUnifiedTopology: tr
 mongoose.set('useFindAndModify', false);
 
 app.use(cors());
-app.use(express.json({urlencoded:false}));
+app.use(express.json());
+app.use(express.urlencoded({extended: true}));
+app.use(express.static(`${__dirname}/public`));
 const PORT = process.env.PORT || 3000;
 
 app.get('/', (req,res) => {

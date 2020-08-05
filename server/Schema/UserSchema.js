@@ -2,9 +2,12 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const config = require('../config/config');
-const nodemailer = require('nodemailer');
 
 const userSchema = mongoose.Schema({
+    avatar_url: {
+        type: String,
+        default: 'link do zwyklego zdjecia'
+    },
     first_name: {
         type: String,
         required: [true, "Proszę podać imię!"]
@@ -45,7 +48,7 @@ const userSchema = mongoose.Schema({
     },
     phone_number: {
         type: String,
-        default: '997997997',
+        //default: '997997997',
         required: [true, "Proszę podać swój numer telefonu!"]
     },
     date_birth: {
@@ -55,12 +58,31 @@ const userSchema = mongoose.Schema({
     profession: {
         type: String,
         default: 'none',
-        required: [true, "Proszę podać swoją profesję!"]
+        //required: [true, "Proszę podać swoją profesję!"]
     },
     rates: {
         type: Number,
         default: 0
     },
+    finished_work: [
+        {
+            title: {
+                type: String,
+                required: true
+            },
+            desc: {
+                type: String,
+                required: true
+            },
+            photos: [
+                {
+                    url: {
+                        type: String
+                    }
+                }
+            ]
+        }
+    ],
     reviews: [
         {
             id_commentator: {

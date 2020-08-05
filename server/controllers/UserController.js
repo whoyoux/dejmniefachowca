@@ -18,6 +18,8 @@ exports.registerNewUser = async (req,res) => {
             email: req.body.email,
             password: req.body.password,
             isProfessional: req.body.isProfessional,
+            profession: req.body.profession,
+            phone_number: req.body.phone_number,
             city: req.body.city,
             street: req.body.street,
             voivodeship: req.body.voivodeship,
@@ -64,17 +66,38 @@ exports.loginUser = async (req,res) => {
 };
 
 exports.getUserDetails = async (req,res) => {
+    console.log(req.userData);
     await res.json(req.userData);
 };
 
 exports.getSpecificUser = async (req,res) => {
     try {
         let user = await User.findOne({_id: req.params.id});
-        res.status(200).json(user);
+        const userToSend = {
+            _id: user._id,
+            avatar_url: user.avatar_url,
+            city: user.city,
+            created_date: user.created_date,
+            date_birth: user.date_birth,
+            email: user.email,
+            finished_work: user.finished_work,
+            first_name: user.first_name,
+            isProfessional:user.isProfessional,
+            isVerified: user.isVerified,
+            last_name: user.last_name,
+            phone_number: user.phone_number,
+            profession: user.profession,
+            rates: user.rates,
+            reviews: user.reviews,
+            role: user.role,
+            street: user.street,
+            voivodeship: user.voivodeship
+        }
+        res.status(200).json(userToSend);
     } catch(err) {
         res.status(200).json({message: 'Użytkownik nie został znaleziony!'});
     }
-    
+
 }
 
 exports.confirmAccount = async (req, res, next) => {
@@ -133,7 +156,7 @@ exports.resendVerifyToken = async (req, res, next) => {
                 subject: 'dejmniefachowca.pl - Weryfikacja konta',
                 text: `siema, masz tu link: \nhttp://localhost:8080/confirm/${savedToken.token}`
             };
-            let info = await transporter.sendMail(mailOptions);
+            await transporter.sendMail(mailOptions);
             res.status(200).json({message: `Udało się wysłać ponownie token potwiedzający konto: ${req.body.email}`})
         } catch(errSaved) {
             res.status(500).json({error: `Nie udało się stworzyć ponownie tokenu potwierdzającego konto ${user.email}! Błąd: ${errSaved.message}`})
@@ -143,3 +166,24 @@ exports.resendVerifyToken = async (req, res, next) => {
     }
     
 };
+
+exports.uploadPhoto = async (req, res) => {
+    if(req.file) {
+        try {
+            //let user = await User.findOne({_id: req.userData._id});
+            //user.avatar_url = req.body.avatar_url;
+            //let info = await user.save();
+
+            let user = await User.findOneAndUpdate({_id: req.userData._id}, {
+                avatar_url: req.body.avatar_url
+            });
+            //res.json({message: `File uploaded at: ${req.file.fieldname}`});
+            res.json({message: `File uploaded at: ${req.body.avatar_url}`});
+        } catch(err) {
+            res.status(500).json({error: err.message});
+        }
+
+    } else {
+        res.status(400).json({error: 'Plik nie został znaleziony!'});
+    }
+}
