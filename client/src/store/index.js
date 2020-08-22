@@ -1,30 +1,31 @@
-import Vue from 'vue'
-import Vuex from 'vuex'
+import Vue from "vue";
+import Vuex from "vuex";
 
-Vue.use(Vuex)
+Vue.use(Vuex);
 
 export default new Vuex.Store({
   state: {
     user: {
-      id: '',
-      first_name: '',
-      last_name: '',
-      email: '',
-      city: '',
-      street: '',
-      voivodeship: '',
-      phone_number: '',
+      id: "",
+      first_name: "",
+      last_name: "",
+      email: "",
+      city: "",
+      street: "",
+      voivodeship: "",
+      phone_number: "",
       reviews: [],
-      rates: '',
-      created_date: '',
-      isVerified: '',
-      role: '',
-      profession: ''
+      rates: "",
+      created_date: "",
+      isVerified: "",
+      role: "",
+      profession: "",
     },
     PROFESSION: {
-      plumber: 'Hydraulik',
-      handyman: 'Złota rączka'
-    }
+      plumber: "Hydraulik",
+      handyman: "Złota rączka",
+    },
+    isLogged: false,
   },
   mutations: {
     setUser(state, data) {
@@ -44,24 +45,25 @@ export default new Vuex.Store({
       state.user.role = data.profession;
     },
     resetUser(state) {
-      state.user.id = '';
-      state.user.first_name = '';
-      state.user.last_name = '';
-      state.user.email = '';
-      state.user.city = '';
-      state.user.street = '';
-      state.user.voivodeship = '';
-      state.user.phone_number = '';
+      state.user.id = "";
+      state.user.first_name = "";
+      state.user.last_name = "";
+      state.user.email = "";
+      state.user.city = "";
+      state.user.street = "";
+      state.user.voivodeship = "";
+      state.user.phone_number = "";
       state.user.reviews = [];
-      state.user.rates = '';
-      state.user.created_date = '';
-      state.user.isVerified = '';
-      state.user.role = '';
-      state.user.role = '';
-    }
+      state.user.rates = "";
+      state.user.created_date = "";
+      state.user.isVerified = "";
+      state.user.role = "";
+      state.user.role = "";
+    },
+    setLogged(state, bool) {
+      state.isLogged = bool;
+    },
   },
-  actions: {
-  },
-  modules: {
-  }
-})
+  actions: {},
+  modules: {},
+});

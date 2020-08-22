@@ -13,7 +13,6 @@ const reportSchema = mongoose.Schema({
   },
   desc: {
     type: String,
-    required: true,
   },
   created_date: {
     type: Date,

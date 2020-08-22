@@ -61,7 +61,7 @@ export default {
     }
   },
   methods: {
-    ...mapMutations(["setUser"]),
+    ...mapMutations(["setUser", "setLogged"]),
     async loginUser() {
       try {
         let response = await axios.post(
@@ -76,20 +76,12 @@ export default {
           //await this.setUser(response.data);
           localStorage.setItem("id", response.data.user._id);
           await this.setUser(response.data);
-          this.$bvToast.toast(
-            "Logowanie udane! /Przechodze na stronę główną/",
-            {
-              title: "Logowanie",
-              variant: "success",
-              autoHideDelay: 5000,
-              appendToast: false,
-            }
-          );
+
           const Toast = Swal.mixin({
             toast: true,
             position: "top-end",
             showConfirmButton: false,
-            timer: 3000,
+            timer: 5000,
             timerProgressBar: true,
             onOpen: (toast) => {
               toast.addEventListener("mouseenter", Swal.stopTimer);
@@ -99,18 +91,29 @@ export default {
 
           Toast.fire({
             icon: "success",
-            title: "Signed in successfully",
+            title: "Logowanie udane",
           });
+          this.setLogged(true);
           this.$router.push("/dashboard");
         }
       } catch (err) {
         console.log("Error! " + err);
         this.error = "Błędne dane do logowania!";
-        this.$bvToast.toast("Błędny email lub hasło!", {
-          title: "Logowanie",
-          variant: "danger",
-          autoHideDelay: 5000,
-          appendToast: false,
+        const Toast = Swal.mixin({
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 5000,
+          timerProgressBar: true,
+          onOpen: (toast) => {
+            toast.addEventListener("mouseenter", Swal.stopTimer);
+            toast.addEventListener("mouseleave", Swal.resumeTimer);
+          },
+        });
+
+        Toast.fire({
+          icon: "warning",
+          title: "Błędne dane logowania!",
         });
       }
     },

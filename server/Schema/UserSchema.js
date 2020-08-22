@@ -3,6 +3,8 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const config = require("../config/config");
 
+//TODO: Dodać historię użytkownika
+
 const userSchema = mongoose.Schema({
   avatar_url: {
     type: String,

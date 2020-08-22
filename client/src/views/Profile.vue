@@ -39,6 +39,9 @@
         <h3>{{profile.city}}</h3>
         <h3 style="color: green" v-if="profile.isVerified">Zweryfikowany</h3>
         <h3 style="color: red" v-else>Niezweryfikowany</h3>
+        <a href="#">
+          <h5 @click="reportUser">Zgłoś użytkownika</h5>
+        </a>
       </b-container>
     </b-container>
   </b-container>
@@ -47,6 +50,7 @@
 <script>
 import Swal from "sweetalert2";
 import axios from "axios";
+import VueJwtDecode from "vue-jwt-decode";
 export default {
   name: "Profile",
   data() {
@@ -62,23 +66,56 @@ export default {
   },
   methods: {
     async reportUser() {
-      const { value: formValues } = await Swal.fire({
-        title: "Multiple inputs",
-        html:
-          '<input id="swal-input1" class="swal2-input">' +
-          '<input id="swal-input2" class="swal2-input">',
-        focusConfirm: false,
-        preConfirm: () => {
-          return [
-            document.getElementById("swal-input1").value,
-            document.getElementById("swal-input2").value,
-          ];
+      Swal.mixin({
+        input: "select",
+        confirmButtonText: "Dalej &rarr;",
+        showCancelButton: true,
+        inputOptions: {
+          Profil: {
+            bad_name: "Niewłaściwa nazwa",
+            fake_account: "Nieprawdziwe konto",
+            cheat: "Oszukiwanie",
+          },
         },
-      });
-
-      if (formValues) {
-        Swal.fire(JSON.stringify(formValues));
-      }
+        progressSteps: ["1", "2"],
+      })
+        .queue([
+          {
+            title: "Zgłaszanie użytkownika",
+            text: "Wybierz typ zgłoszenia",
+          },
+          {
+            input: "textarea",
+            title: "Zgłaszanie użytkownika",
+            text: "Powiedz nam więcej o tej sprawie",
+            confirmButtonText: "Wyślij zgłoszenie!",
+          },
+        ])
+        .then((result) => {
+          if (result.value) {
+            axios
+              .post("http://localhost:3000/api/report", {
+                userTo: this.$route.params.id,
+                userFrom: VueJwtDecode.decode(localStorage.getItem("jwt"))._id,
+                title: result.value[0],
+                desc: result.value[1],
+              })
+              .then(() => {
+                Swal.fire({
+                  icon: "success",
+                  title: "Udało się!",
+                  text: "Zgłoszenie zostało wysłane! Zaraz się tym zajmiemy!",
+                });
+              })
+              .catch(() => {
+                Swal.fire({
+                  icon: "error",
+                  title: "Nieudało się!",
+                  text: "Coś poszło źle! Prosze spróbować ponownie poźniej!",
+                });
+              });
+          }
+        });
     },
   },
 };
